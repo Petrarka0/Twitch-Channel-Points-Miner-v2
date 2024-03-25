@@ -294,7 +294,7 @@ class TwitchChannelPointsMiner:
             # 2. Check if streamers are online
             # 3. DEACTIVATED: Check if the user is a moderator. (was used before the 5th of April 2021 to deactivate predictions)
             for streamer in self.streamers:
-                time.sleep(random.uniform(0.3, 0.7))
+                time.sleep(random.uniform(0.1, 0.3))
                 self.twitch.load_channel_points_context(streamer)
                 self.twitch.check_streamer_online(streamer)
                 # self.twitch.viewer_is_mod(streamer)
@@ -486,10 +486,13 @@ class TwitchChannelPointsMiner:
                     - self.original_streamers[streamer_index]
                 )
                 
+                from colorama import Fore
+                streamer_highlight = Fore.YELLOW
+                
                 streamer_gain = (
-                    f"{self.streamers[streamer_index]}, Total Points Gained: {_millify(gained)}"
+                    f"{streamer_highlight}{self.streamers[streamer_index]}{Fore.RESET}, Total Points Gained: {_millify(gained)}"
                     if Settings.logger.less
-                    else f"{repr(self.streamers[streamer_index])}, Total Points Gained (after farming - before farming): {_millify(gained)}"
+                    else f"{streamer_highlight}{repr(self.streamers[streamer_index])}{Fore.RESET}, Total Points Gained (after farming - before farming): {_millify(gained)}"
                 )
                 
                 # i think there are better solution but it's work like it supposed
