@@ -261,6 +261,7 @@ class TwitchChannelPointsMiner:
             )
             for username in streamers_name:
                 if username in streamers_name:
+                    print(f"PROGRESS {streamers_name.index(username)} / {len(streamers_name)}", end="\r")
                     time.sleep(random.uniform(0.3, 0.7))
                     try:
                         streamer = (
