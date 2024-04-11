@@ -129,44 +129,27 @@ class Twitch(object):
                 ]
 
     def get_spade_url(self, streamer):
+        try:
+            # fixes AttributeError: 'NoneType' object has no attribute 'group'
+            # headers = {"User-Agent": self.user_agent}
             from TwitchChannelPointsMiner.constants import USER_AGENTS
-
             headers = {"User-Agent": USER_AGENTS["Linux"]["FIREFOX"]}
-            regex_settings = "(https://static.twitchcdn.net/config/settings.*?js)"
-            max_retries = 5
-            delay = 5  # Delay in seconds between retries
 
-            for attempt in range(max_retries):
-                try:
-                    main_page_request = requests.get(streamer.streamer_url, headers=headers)
-                    response = main_page_request.text
-                    settings_match = re.search(regex_settings, response)
-                    if settings_match is None:
-                        logger.error(f"Failed to find settings URL for streamer {streamer.streamer_url}")
-                        if attempt < max_retries - 1:  # Don't wait on the last attempt
-                            time.sleep(delay)
-                        continue
-                    settings_url = settings_match.group(1)
-                    logger.info(f"Found settings URL for streamer {streamer.streamer_url}")
+            main_page_request = requests.get(
+                streamer.streamer_url, headers=headers)
+            response = main_page_request.text
+            # logger.info(response)
+            regex_settings = "(https://static.twitchcdn.net/config/settings.*?js|https://assets.twitch.tv/config/settings.*?.js)"
+            settings_url = re.search(regex_settings, response).group(1)
 
-                    settings_request = requests.get(settings_url, headers=headers)
-                    response = settings_request.text
-                    regex_spade = '"spade_url":"(.*?)"'
-                    spade_match = re.search(regex_spade, response)
-                    if spade_match is None:
-                        logger.error(f"Failed to find spade URL in settings for streamer {streamer.streamer_url}" )
-                        if attempt < max_retries - 1:  # Don't wait on the last attempt
-                            time.sleep(delay)
-                        continue
-                    streamer.stream.spade_url = spade_match.group(1)
-                    logger.info(
-                        f"Found spade URL in settings for streamer {streamer.streamer_url}"
-                    )
-                    break  # Exit the loop if successful
-                except requests.exceptions.RequestException as e:
-                    logger.error(f"Something went wrong during extraction of 'spade_url': {e}" )
-                    if attempt < max_retries - 1:  # Don't wait on the last attempt
-                        time.sleep(delay)
+            settings_request = requests.get(settings_url, headers=headers)
+            response = settings_request.text
+            regex_spade = '"spade_url":"(.*?)"'
+            streamer.stream.spade_url = re.search(
+                regex_spade, response).group(1)
+        except requests.exceptions.RequestException as e:
+            logger.error(
+                f"Something went wrong during extraction of 'spade_url': {e}")
 
     def get_broadcast_id(self, streamer):
         json_data = copy.deepcopy(GQLOperations.WithIsStreamLiveQuery)
@@ -412,7 +395,7 @@ class Twitch(object):
 
                     elif (
                         prior in [Priority.POINTS_ASCENDING,
-                                  Priority.POINTS_DESCEDING]
+                                  Priority.POINTS_DESCENDING]
                         and len(streamers_watching) < 2
                     ):
                         items = [
@@ -424,7 +407,7 @@ class Twitch(object):
                             items,
                             key=lambda x: x["points"],
                             reverse=(
-                                True if prior == Priority.POINTS_DESCEDING else False
+                                True if prior == Priority.POINTS_DESCENDING else False
                             ),
                         )
                         streamers_watching += [item["index"]
